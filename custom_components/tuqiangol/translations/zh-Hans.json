@@ -1,0 +1,15 @@
+{
+  "config": {
+    "step": {
+      "user": {"title": "连接途强在线", "description": "使用途强在线网站账号登录。", "data": {"username": "账号", "password": "密码"}},
+      "devices": {"title": "选择设备", "data": {"device_imeis": "设备", "scan_interval": "刷新间隔（秒）", "high_precision_address": "使用高精度定位地址"}}
+    },
+    "error": {"cannot_connect": "登录失败或途强接口不可用。", "no_devices": "账号下没有可用设备。"},
+    "abort": {"already_configured": "此账号已经配置。"}
+  },
+  "options": {
+    "step": {
+      "init": {"title": "途强在线选项", "data": {"device_imeis": "设备", "scan_interval": "刷新间隔（秒）", "high_precision_address": "使用高精度定位地址"}}
+    }
+  }
+}
