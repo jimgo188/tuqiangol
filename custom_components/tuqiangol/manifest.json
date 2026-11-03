@@ -3,9 +3,10 @@
   "name": "途强在线",
   "version": "0.1.0",
   "config_flow": true,
-  "documentation": "https://www.tuqiangol.com/",
-  "issue_tracker": "https://github.com/",
+  "documentation": "https://github.com/jimgo188/tuqiangol",
+  "issue_tracker": "https://github.com/jimgo188/tuqiangol/issues",
   "codeowners": [],
   "requirements": [],
   "iot_class": "cloud_polling"
 }
+
