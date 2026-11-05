@@ -75,13 +75,44 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             "gpsTime",
             "gps_time",
             "gpsTimeStr",
+            "lastGpsTime",
+            "lastGpsTimeStr",
+            "gpsDate",
+            "gpsDateStr",
             "locationTime",
+            "locationTimeStr",
+            "lastLocationTime",
+            "lastLocationTimeStr",
             "positionTime",
+            "positionTimeStr",
             "lastPositionTime",
+            "lastPositionTimeStr",
+            "locateTime",
+            "locateTimeStr",
+            "positionDate",
         )
-        heartbeat_time = _first_value(raw, "hbTime", "heartbeatTime", "heartbeat_time", "hb_time")
+        heartbeat_time = _first_value(
+            raw,
+            "hbTime",
+            "heartbeatTime",
+            "heartbeat_time",
+            "hb_time",
+            "communicationTime",
+            "communicationTimeStr",
+            "communicateTime",
+            "communicateTimeStr",
+            "commTime",
+            "lastCommunicationTime",
+            "lastCommunicateTime",
+            "uploadTime",
+            "lastUploadTime",
+            "onlineTime",
+            "lastOnlineTime",
+            "reportTime",
+        )
         previous = self._last_motion_data.setdefault(imei, {})
         gps_time_text = str(gps_time) if gps_time not in (None, "", "未知") else previous.get("gps_time")
+        heartbeat_time_text = str(heartbeat_time) if heartbeat_time not in (None, "", "未知") else previous.get("heartbeat_time")
         speed = _number(_first_value(raw, "speed", "speedValue", "speedStr", "velocity"))
         direction = _number(_first_value(raw, "direction", "directionValue", "directionStr", "course"))
         if speed is None:
@@ -94,6 +125,8 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             previous["direction"] = direction
         if gps_time_text is not None:
             previous["gps_time"] = gps_time_text
+        if heartbeat_time_text is not None:
+            previous["heartbeat_time"] = heartbeat_time_text
         return {
             "imei": imei,
             "name": raw.get("deviceName") or imei,
@@ -103,7 +136,7 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             "available": raw.get("status") not in {"OFFLINE", "SLEEP"},
             "status": raw.get("statusStr") or raw.get("statusAbstract") or raw.get("status"),
             "gps_time": gps_time_text,
-            "heartbeat_time": str(heartbeat_time) if heartbeat_time is not None else None,
+            "heartbeat_time": heartbeat_time_text,
             "position_type": raw.get("positionType"),
             "speed": speed,
             "direction": direction,
@@ -128,16 +161,31 @@ def _number(value: Any) -> float | None:
 
 
 def _first_value(data: dict[str, Any], *keys: str) -> Any:
-    """Read a field from the top-level or common nested location objects."""
-    sources = [data]
-    for nested_key in ("location", "position", "lastLocation", "lastPosition", "data"):
-        nested = data.get(nested_key)
-        if isinstance(nested, dict):
-            sources.append(nested)
-    for source in sources:
-        for key in keys:
-            value = source.get(key)
-            if value not in (None, ""):
-                return value
+    """Read a field from the payload, including nested location/detail objects."""
+    wanted = {key.lower() for key in keys}
+
+    def walk(value: Any, depth: int = 0) -> Any:
+        if depth > 5:
+            return None
+        if isinstance(value, dict):
+            for key, item in value.items():
+                if str(key).lower() in wanted and item not in (None, ""):
+                    if isinstance(item, dict):
+                        return item.get("value") or item.get("time") or item.get("text")
+                    return item
+            for item in value.values():
+                found = walk(item, depth + 1)
+                if found not in (None, ""):
+                    return found
+        elif isinstance(value, list):
+            for item in value:
+                found = walk(item, depth + 1)
+                if found not in (None, ""):
+                    return found
+        return None
+
+    value = walk(data)
+    if value not in (None, ""):
+        return value
     return None
 
