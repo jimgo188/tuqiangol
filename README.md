@@ -17,6 +17,7 @@
 填写仓库地址：https://github.com/jimgo188/tuqiangol，类别选择「集成」
 点击添加，然后在 HACS 中搜索「途强在线」并安装
 重启 Home Assistant
+
 方式二：手动安装
 下载本仓库最新 Release 中的 tuqiangol.zip 并解压
 将 custom_components/tuqiang_traccar 文件夹复制到您 Home Assistant 配置目录下的 custom_components 目录中
