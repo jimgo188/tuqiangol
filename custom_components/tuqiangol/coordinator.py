@@ -25,6 +25,7 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._session: ClientSession = async_get_clientsession(hass)
         self.api = TuqiangApi(self._session, entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
         self._address_cache: dict[str, str] = {}
+        self._last_motion_data: dict[str, dict[str, Any]] = {}
         self._device_imeis = entry.options.get(CONF_DEVICE_IMEIS, entry.data.get(CONF_DEVICE_IMEIS, []))
         self._high_precision_address = entry.options.get(CONF_HIGH_PRECISION_ADDRESS, False)
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=update_interval)
@@ -79,6 +80,20 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             "lastPositionTime",
         )
         heartbeat_time = _first_value(raw, "hbTime", "heartbeatTime", "heartbeat_time", "hb_time")
+        previous = self._last_motion_data.setdefault(imei, {})
+        gps_time_text = str(gps_time) if gps_time not in (None, "", "未知") else previous.get("gps_time")
+        speed = _number(_first_value(raw, "speed", "speedValue", "speedStr", "velocity"))
+        direction = _number(_first_value(raw, "direction", "directionValue", "directionStr", "course"))
+        if speed is None:
+            speed = previous.get("speed")
+        else:
+            previous["speed"] = speed
+        if direction is None:
+            direction = previous.get("direction")
+        else:
+            previous["direction"] = direction
+        if gps_time_text is not None:
+            previous["gps_time"] = gps_time_text
         return {
             "imei": imei,
             "name": raw.get("deviceName") or imei,
@@ -87,11 +102,11 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             "address": address,
             "available": raw.get("status") not in {"OFFLINE", "SLEEP"},
             "status": raw.get("statusStr") or raw.get("statusAbstract") or raw.get("status"),
-            "gps_time": str(gps_time) if gps_time is not None else None,
+            "gps_time": gps_time_text,
             "heartbeat_time": str(heartbeat_time) if heartbeat_time is not None else None,
             "position_type": raw.get("positionType"),
-            "speed": _number(raw.get("speed")),
-            "direction": _number(raw.get("direction")),
+            "speed": speed,
+            "direction": direction,
             "battery": _number(raw.get("elecQuantity")),
             "gps_signal": _number(raw.get("gPSSignal")),
             "acc": raw.get("acc") == "1",
@@ -125,3 +140,4 @@ def _first_value(data: dict[str, Any], *keys: str) -> Any:
             if value not in (None, ""):
                 return value
     return None
+
