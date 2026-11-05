@@ -14,7 +14,7 @@
 方式一：通过 HACS 自定义仓库（推荐）
 确保已安装 HACS
 在 HACS 中点击「集成」→ 右上角菜单 →「自定义存储库」
-填写仓库地址：https://github.com/jimgo188/tuqiangol，类别选择「集成」
+填写仓库地址：[https://github.com/jimgo188/tuqiangol]，类别选择「集成」
 点击添加，然后在 HACS 中搜索「途强在线」并安装
 重启 Home Assistant
 
