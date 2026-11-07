@@ -70,8 +70,16 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         if not hasattr(self, "_last_coords"):
             self._last_coords = {}
         self._last_coords[imei] = (latitude, longitude)
+        position_type = _first_value(raw, "positionType", "position_type", "locationType", "locateType")
+        position_type_text = str(position_type or "").upper()
+        position_specific_time_keys = {
+            "WIFI": ("wifiTime", "wifiGpsTime", "wifiLocationTime", "wifiPositionTime"),
+            "LBS": ("lbsTime", "lbsGpsTime", "baseStationTime", "baseStationGpsTime", "cellTime", "cellLocationTime"),
+            "BEACON": ("beaconTime", "beaconGpsTime", "beaconLocationTime"),
+        }.get(position_type_text, ())
         gps_time = _first_value(
             raw,
+            *position_specific_time_keys,
             "gpsTime",
             "gps_time",
             "gpsTimeStr",
@@ -137,7 +145,7 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             "status": raw.get("statusStr") or raw.get("statusAbstract") or raw.get("status"),
             "gps_time": gps_time_text,
             "heartbeat_time": heartbeat_time_text,
-            "position_type": raw.get("positionType"),
+            "position_type": position_type,
             "speed": speed,
             "direction": direction,
             "battery": _number(raw.get("elecQuantity")),
@@ -162,14 +170,15 @@ def _number(value: Any) -> float | None:
 
 def _first_value(data: dict[str, Any], *keys: str) -> Any:
     """Read a field from the payload, including nested location/detail objects."""
-    wanted = {key.lower() for key in keys}
-
     def walk(value: Any, depth: int = 0) -> Any:
         if depth > 5:
             return None
         if isinstance(value, dict):
-            for key, item in value.items():
-                if str(key).lower() in wanted and item not in (None, ""):
+            # Respect the caller's key order. This matters when the payload
+            # contains an old generic gpsTime and a newer WIFI/LBS time.
+            for wanted_key in keys:
+                item = next((item for key, item in value.items() if str(key).lower() == wanted_key.lower()), None)
+                if item not in (None, ""):
                     if isinstance(item, dict):
                         return item.get("value") or item.get("time") or item.get("text")
                     return item
