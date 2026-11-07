@@ -99,6 +99,7 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             "locateTimeStr",
             "positionDate",
         )
+        other_position_time = _first_value(raw, "otherPosTime", "other_pos_time", "otherPositionTime")
         heartbeat_time = _first_value(
             raw,
             "hbTime",
@@ -119,7 +120,7 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             "reportTime",
         )
         previous = self._last_motion_data.setdefault(imei, {})
-        gps_time_text = str(gps_time) if gps_time not in (None, "", "未知") else previous.get("gps_time")
+        gps_time_text = _latest_time(gps_time, other_position_time) or previous.get("gps_time")
         heartbeat_time_text = str(heartbeat_time) if heartbeat_time not in (None, "", "未知") else previous.get("heartbeat_time")
         speed = _number(_first_value(raw, "speed", "speedValue", "speedStr", "velocity"))
         direction = _number(_first_value(raw, "direction", "directionValue", "directionStr", "course"))
@@ -161,6 +162,36 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 def _number(value: Any) -> float | None:
     if value in (None, "", "暂无速度", "未知"):
         return None
+
+
+def _latest_time(*values: Any) -> str | None:
+    """Match the website: use the newer GPS or non-GPS position time."""
+    candidates = [_format_time(value) for value in values if value not in (None, "", "未知")]
+    candidates = [value for value in candidates if value]
+    if not candidates:
+        return None
+    return max(candidates, key=_time_sort_key)
+
+
+def _format_time(value: Any) -> str | None:
+    if value in (None, "", "未知"):
+        return None
+    text = str(value).strip()
+    try:
+        number = float(text)
+        if number > 100_000_000_000:
+            number /= 1000
+        return datetime.fromtimestamp(number).strftime("%Y-%m-%d %H:%M:%S")
+    except (TypeError, ValueError, OverflowError, OSError):
+        return text
+
+
+def _time_sort_key(value: str) -> tuple[int, str]:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return (1, parsed.isoformat())
+    except ValueError:
+        return (0, value)
     try:
         text = str(value).strip().replace("%", "").replace("V", "").replace("Km", "")
         return float(text)
