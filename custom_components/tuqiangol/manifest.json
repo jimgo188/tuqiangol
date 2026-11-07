@@ -1,7 +1,7 @@
 {
   "domain": "tuqiangol",
   "name": "途强在线",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "config_flow": true,
   "documentation": "https://github.com/jimgo188/tuqiangol",
   "issue_tracker": "https://github.com/jimgo188/tuqiangol/issues",
