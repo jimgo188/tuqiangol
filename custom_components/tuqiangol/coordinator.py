@@ -136,6 +136,21 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             previous["gps_time"] = gps_time_text
         if heartbeat_time_text is not None:
             previous["heartbeat_time"] = heartbeat_time_text
+        battery = _number(_first_value(raw, "elecQuantity", "electricQuantity", "battery", "batteryLevel", "batteryPercent"))
+        gps_signal = _number(_first_value(raw, "gPSSignal", "gpsSignal", "gps_signal", "gpsLevel", "signal"))
+        total_mileage = _number(_first_value(raw, "totalKm", "totalMileage", "mileage", "mileageValue", "totalMileageKm"))
+        if battery is not None:
+            previous["battery"] = battery
+        else:
+            battery = previous.get("battery")
+        if gps_signal is not None:
+            previous["gps_signal"] = gps_signal
+        else:
+            gps_signal = previous.get("gps_signal")
+        if total_mileage is not None:
+            previous["total_mileage"] = total_mileage
+        else:
+            total_mileage = previous.get("total_mileage")
         return {
             "imei": imei,
             "name": raw.get("deviceName") or imei,
@@ -149,18 +164,23 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             "position_type": position_type,
             "speed": speed,
             "direction": direction,
-            "battery": _number(raw.get("elecQuantity")),
-            "gps_signal": _number(raw.get("gPSSignal")),
+            "battery": battery,
+            "gps_signal": gps_signal,
             "acc": raw.get("acc") == "1",
             "power_status": raw.get("powerStatus") == "1",
             "external_voltage": _number(raw.get("voltage")),
-            "total_mileage": _number(raw.get("totalKm")),
+            "total_mileage": total_mileage,
             "raw": raw,
         }
 
 
 def _number(value: Any) -> float | None:
     if value in (None, "", "暂无速度", "未知"):
+        return None
+    try:
+        text = str(value).strip().replace("%", "").replace("V", "").replace("Km", "")
+        return float(text)
+    except (TypeError, ValueError):
         return None
 
 
@@ -192,11 +212,6 @@ def _time_sort_key(value: str) -> tuple[int, str]:
         return (1, parsed.isoformat())
     except ValueError:
         return (0, value)
-    try:
-        text = str(value).strip().replace("%", "").replace("V", "").replace("Km", "")
-        return float(text)
-    except (TypeError, ValueError):
-        return None
 
 
 def _first_value(data: dict[str, Any], *keys: str) -> Any:
