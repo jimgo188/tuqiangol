@@ -62,6 +62,16 @@ class TuqiangSensor(TuqiangEntity, SensorEntity):
             return "开启" if value else "关闭"
         if self.spec.key == "battery" and value is not None:
             return round(value, 1)
+        if self.spec.key == "speed" and value in (None, ""):
+            return "暂无速度"
         if value in (None, ""):
             return "未知" if self.spec.key in {"gps_time", "heartbeat_time", "address", "status", "position_type", "acc", "power_status"} else None
         return value
+
+    @property
+    def native_unit_of_measurement(self):
+        """Hide the numeric unit while the website reports no speed."""
+        if self.spec.key == "speed" and self.data.get("speed") in (None, ""):
+            return None
+        return self.spec.unit
+
