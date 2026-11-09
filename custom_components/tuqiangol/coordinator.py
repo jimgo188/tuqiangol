@@ -130,10 +130,6 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             speed = None
         elif speed is not None:
             previous["speed"] = speed
-        if direction is None:
-            direction = previous.get("direction")
-        else:
-            previous["direction"] = direction
         if gps_time_text is not None:
             previous["gps_time"] = gps_time_text
         if heartbeat_time_text is not None:
