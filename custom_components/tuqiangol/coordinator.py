@@ -124,6 +124,12 @@ class TuqiangCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         heartbeat_time_text = str(heartbeat_time) if heartbeat_time not in (None, "", "未知") else previous.get("heartbeat_time")
         speed = _number(_first_value(raw, "speed", "speedValue", "speedStr", "velocity"))
         direction = _number(_first_value(raw, "direction", "directionValue", "directionStr", "course"))
+        # The website only supplies a heading with some GPS reports. Keep the
+        # last valid heading when the current WIFI/LBS report has no heading.
+        if direction is not None:
+            previous["direction"] = direction
+        else:
+            direction = previous.get("direction")
         # Match the website: only a moving device exposes a speed. A static
         # device must show "暂无速度", rather than the previous speed value.
         if str(raw.get("status", "")).upper() not in {"MOVE", "ARREARSOL"}:
