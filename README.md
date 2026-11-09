@@ -10,27 +10,13 @@
 - “立即定位”按钮，对应网站的“下发指令 → 立即定位”
 - 可选使用途强网站的“高精度定位地址”
 
-安装
-方式一：通过 HACS 自定义仓库（推荐）
-确保已安装 HACS
-在 HACS 中点击「集成」→ 右上角菜单 →「自定义存储库」
-填写仓库地址：https://github.com/jimgo188/tuqiangol
-类别选择集成
-点击添加，然后在 HACS 中搜索「途强在线」并安装
-重启 Home Assistant
+方向值按网站数据处理：GPS 定位返回方向时更新；WIFI/基站定位没有方向时保留最后一次有效方向。
 
-方式二：手动安装
-下载本仓库最新 Release 中的 tuqiangol.zip 并解压
-将 custom_components/tuqiang_traccar 文件夹复制到您 Home Assistant 配置目录下的 custom_components 目录中
-重启 Home Assistant
-⚙️ 配置
-第一步：添加集成
-在 Home Assistant 中，前往「设置」→「设备与服务」→「添加集成」
-搜索「途强在线」并点击
-第二步：输入账号信息，并设置更新频率
+安装时把 `custom_components/tuqiangol` 复制到 Home Assistant 配置目录的 `custom_components` 下，重启 Home Assistant，然后在“设置 → 设备与服务 → 添加集成”中搜索“途强在线”。登录后选择设备和刷新间隔。
 
+默认保留途强接口返回的坐标。如果地图位置出现偏移，可在后续版本中增加坐标系转换选项；地址始终通过途强自己的 `/getAddress` 接口获取。
 
+在集成的“配置”选项中勾选“使用高精度定位地址”，即可按网站的高精度地址规则查询地址。
 
-
-
+当前实现只会在按下 Home Assistant 的“立即定位”按钮时发送定位指令，不会在轮询时自动下发指令。
 
